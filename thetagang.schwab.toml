@@ -1,0 +1,161 @@
+# ThetaGang Configuration with Schwab Support
+# Copy this file and modify for your needs
+
+[account]
+# Broker selection: 'ibkr' or 'schwab'
+broker = "schwab"
+
+# Schwab account settings (when broker = "schwab")
+[account.schwab]
+# Get these credentials from https://developer.schwab.com
+app_key = "YOUR_SCHWAB_APP_KEY"
+app_secret = "YOUR_SCHWAB_APP_SECRET"
+
+# OAuth redirect URI - must match what you configured in Schwab Developer Portal
+redirect_uri = "https://127.0.0.1:8182"
+
+# Your encrypted account number (hash value)
+# Get this by running: python -m thetagang.tools.schwab_setup
+account_number = "YOUR_ENCRYPTED_ACCOUNT_NUMBER_HASH"
+
+# Optional: Custom path for token storage
+# Defaults to ~/.thetagang/schwab_tokens.json
+token_path = "~/.thetagang/schwab_tokens.json"
+
+# Optional: Rate limiting (requests per second)
+# Schwab has rate limits, adjust as needed
+rate_limit_calls_per_second = 2
+
+# IBKR account settings (when broker = "ibkr")
+# These settings are used only if broker = "ibkr"
+[account.ibkr]
+number = "YOUR_IBKR_ACCOUNT"
+cancel_orders = true
+summarize_positions = true
+margin_usage = 0.5
+market_data_type = 1
+
+# Order configuration
+[orders]
+# Order exchange - for IBKR compatibility
+# Schwab ignores this setting
+exchange = "SMART"
+
+# Algorithm strategy settings
+[orders.algo]
+strategy = "Adaptive"
+
+[orders.algo.params]
+priority = "Patient"
+
+# Account value and portfolio targets
+[target]
+# Target percentages for portfolio allocation
+# These work the same for both IBKR and Schwab
+dte = 45
+delta = 0.3
+minimum_cushion = 0.05
+maximum_new_contracts_percent = 0.05
+max_dte = 60
+
+# Symbol configuration
+# Same structure for both brokers
+[symbols.SPY]
+weight = 0.4
+delta = 0.30
+
+[symbols.SPY.puts]
+delta = 0.30
+strike_limit = 400  # Don't write puts above this strike
+
+[symbols.SPY.calls]
+delta = 0.30
+strike_limit = 450  # Don't write calls below this strike
+
+[symbols.QQQ]
+weight = 0.3
+delta = 0.30
+
+[symbols.QQQ.puts]
+delta = 0.30
+
+[symbols.QQQ.calls]
+delta = 0.30
+
+[symbols.TLT]
+weight = 0.2
+delta = 0.25
+
+[symbols.TLT.puts]
+delta = 0.25
+
+[symbols.TLT.calls]
+delta = 0.25
+
+[symbols.IWM]
+weight = 0.1
+delta = 0.30
+
+[symbols.IWM.puts]
+delta = 0.30
+
+[symbols.IWM.calls]
+delta = 0.30
+
+# Write threshold - when to write new options
+[write_when]
+calculate_net_contracts = false
+
+[write_when.puts]
+green = true
+red = false
+
+[write_when.calls]
+cap_factor = 1.0
+excess_only = false
+
+# Roll conditions
+[roll_when]
+pnl = 0.9
+dte = 15
+min_pnl = 0.0
+close_if_unable_to_roll = false
+
+[roll_when.calls]
+itm = true
+always_when_itm = false
+maintain_high_water_mark = false
+
+[roll_when.puts]
+itm = false
+
+# Optional: VIX hedge (works with both brokers)
+[vix_call_hedge]
+enabled = false
+allocation = 0.01
+close_hedges_when_vix_exceeds = 50
+ignore_dte = 5
+
+# Optional: Cash management (works with both brokers)
+[cash_management]
+enabled = false
+fund = "SGOV"
+buy_threshold = 0.01
+sell_threshold = 0.005
+
+[cash_management.orders]
+[cash_management.orders.algo]
+strategy = "Vwap"
+
+# Exchange hours (for market timing)
+[exchange_hours]
+exchange = "XNYS"
+action_when_closed = "wait"
+delay_after_open = 1800
+delay_before_close = 1800
+max_wait_until_open = 3600
+
+# IB Async settings (only used for IBKR)
+[ib_async]
+api_response_wait_time = 60
+# logfile = "ib_async.log"  # Uncomment to enable logging
