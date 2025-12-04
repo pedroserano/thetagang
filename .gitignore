@@ -152,3 +152,13 @@ cython_debug/
 
 # Ignore notebooks
 *.ipynb
+
+# Add these lines to .gitignore
+
+# Schwab OAuth tokens (contains sensitive credentials)
+schwab_tokens.json
+**/schwab_tokens.json
+.thetagang/schwab_tokens.json
+
+# Schwab-specific local configs
+thetagang.schwab.local.toml
