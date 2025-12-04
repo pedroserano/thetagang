@@ -29,7 +29,7 @@ dependencies = [
   "schwab-trader>=0.1.0",  # NEW: Added for Schwab support
   "httpx>=0.27.0",  # NEW: Required by schwab-trader for async HTTP
 ]
-description = "ThetaGang is an IBKR bot for getting money"
+description = "ThetaGang is a bot for getting money"
 license = "AGPL-3.0-only"
 name = "thetagang"
 readme = "README.md"
