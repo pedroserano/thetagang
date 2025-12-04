@@ -36,15 +36,7 @@ Before using ThetaGang:
 
 ThetaGang now supports both Interactive Brokers (IBKR) and Charles Schwab as brokerage backends. All the same strategies and configurations work with either broker.
 
-## Why Schwab?
-
-- **No gateway software required** - Schwab uses a REST API, no need for TWS/IBC
-- **Simpler deployment** - No Java dependencies or desktop applications
-- **Modern API** - RESTful OAuth 2.0 authentication
-- **Zero commissions** - On stock and options trades for US equities
-- **Automated token refresh** - Tokens are managed automatically by the library
-
-## Prerequisites for Schwab
+# Prerequisites for Schwab
 
 ### 1. Create a Schwab Developer Account
 
