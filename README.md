@@ -30,6 +30,241 @@ Before using ThetaGang:
 - Consider paper trading first to understand the mechanics and risks
 - Consult with a financial advisor if you're unsure about the risks
 
+# Schwab Support (NEW)
+
+## Overview
+
+ThetaGang now supports both Interactive Brokers (IBKR) and Charles Schwab as brokerage backends. All the same strategies and configurations work with either broker.
+
+## Why Schwab?
+
+- **No gateway software required** - Schwab uses a REST API, no need for TWS/IBC
+- **Simpler deployment** - No Java dependencies or desktop applications
+- **Modern API** - RESTful OAuth 2.0 authentication
+- **Zero commissions** - On stock and options trades for US equities
+- **Automated token refresh** - Tokens are managed automatically by the library
+
+## Prerequisites for Schwab
+
+### 1. Create a Schwab Developer Account
+
+1. Go to [https://developer.schwab.com](https://developer.schwab.com)
+2. Sign up for a developer account (separate from your trading account)
+3. Create a new app in the Developer Dashboard
+
+### 2. Configure Your App
+
+When creating your app:
+- **App Name**: Choose any name (e.g., "ThetaGang Bot")
+- **Redirect URI**: Enter `https://127.0.0.1:8182`
+- **API Products**: Select both:
+  - ✓ Accounts and Trading Production
+  - ✓ Market Data Production
+
+Wait for approval (typically 1-3 business days). You'll receive your App Key and App Secret.
+
+## Installation
+
+```bash
+# ThetaGang already includes schwab-trader as a dependency
+pip install thetagang
+
+# Or with uv:
+uv pip install thetagang
+```
+
+## Setup
+
+### Step 1: Run OAuth Setup
+
+ThetaGang includes a setup tool to help with Schwab authentication:
+
+```bash
+python -m thetagang.tools.schwab_setup
+```
+
+This will:
+1. Prompt for your App Key and App Secret
+2. Open your browser for Schwab login
+3. Save OAuth tokens to `~/.thetagang/schwab_tokens.json`
+4. Display your account hash values
+
+### Step 2: Configure ThetaGang
+
+Copy the example config:
+
+```bash
+curl -Lq https://raw.githubusercontent.com/brndnmtthws/thetagang/main/thetagang.schwab.toml -o thetagang.toml
+```
+
+Edit `thetagang.toml`:
+
+```toml
+[account]
+broker = "schwab"  # Set to "schwab" instead of "ibkr"
+
+[account.schwab]
+app_key = "YOUR_APP_KEY"
+app_secret = "YOUR_APP_SECRET"
+redirect_uri = "https://127.0.0.1:8182"
+account_number = "HASH_VALUE_FROM_SETUP_SCRIPT"
+```
+
+**Important**: Use the `hashValue` from the setup script, NOT your actual account number.
+
+### Step 3: Configure Symbols and Strategy
+
+The rest of the config is identical to IBKR. Configure your symbols, deltas, and strategy preferences as usual:
+
+```toml
+[symbols.SPY]
+weight = 0.4
+delta = 0.30
+
+[symbols.QQQ]
+weight = 0.3
+delta = 0.30
+
+# ... etc
+```
+
+### Step 4: Run ThetaGang
+
+```bash
+thetagang --config thetagang.toml
+```
+
+## Token Management
+
+### Automatic Token Refresh
+
+The schwab-trader library automatically refreshes your access token every 30 minutes. You don't need to set up any cron jobs or schedulers.
+
+### Token Expiration
+
+Schwab refresh tokens expire after 7 days. When this happens:
+
+1. ThetaGang will detect the expired token
+2. It will automatically prompt you to re-authenticate
+3. Simply log in again when prompted
+
+To avoid interruptions, you can:
+- Run the setup script every 6 days: `python -m thetagang.tools.schwab_setup`
+- Or just let ThetaGang handle it automatically when it detects expiration
+
+### Token Storage Location
+
+Tokens are stored at: `~/.thetagang/schwab_tokens.json`
+
+**Security**: Keep this file secure! It contains credentials for accessing your account.
+
+## Running with Docker
+
+### Docker Support for Schwab
+
+Since Schwab doesn't require TWS/IBC, the Docker setup is much simpler:
+
+```bash
+# Create config directory
+mkdir ~/thetagang
+cd ~/thetagang
+
+# Run setup to create tokens (do this on host machine first)
+python -m thetagang.tools.schwab_setup
+
+# Copy your config
+cp thetagang.toml ~/thetagang/
+
+# Run ThetaGang
+docker run --rm -i \
+  -v ~/thetagang:/etc/thetagang \
+  -v ~/.thetagang:/root/.thetagang \
+  brndnmtthws/thetagang:main \
+  --config /etc/thetagang/thetagang.toml
+```
+
+### Cron with Schwab
+
+```bash
+# Run every day at 9:05am ET Monday-Friday
+5 9 * * 1-5 docker run --rm -i \
+  -v ~/thetagang:/etc/thetagang \
+  -v ~/.thetagang:/root/.thetagang \
+  brndnmtthws/thetagang:main \
+  --config /etc/thetagang/thetagang.toml
+```
+
+## Switching from IBKR to Schwab
+
+If you're currently using IBKR and want to switch to Schwab:
+
+1. **Keep your existing IBKR config** - The IBKR sections can stay in your config file
+2. **Add Schwab config** - Add the `[account.schwab]` section
+3. **Change broker setting**: 
+   ```toml
+   [account]
+   broker = "schwab"  # Changed from "ibkr"
+   ```
+4. **Run setup** - `python -m thetagang.tools.schwab_setup`
+5. **Test** - Run with small positions first
+
+## Troubleshooting
+
+### "Failed to connect to Schwab"
+
+**Check**:
+- App Key and App Secret are correct
+- Redirect URI matches exactly (including `https://`)
+- Tokens exist at `~/.thetagang/schwab_tokens.json`
+- Run `python -m thetagang.tools.schwab_setup` again
+
+### "Account not found"
+
+**Solution**:
+- Use the hash value from the setup script, not your account number
+- Make sure you selected the correct account during OAuth login
+- Run setup again and carefully note the hash value displayed
+
+### "Rate limit exceeded"
+
+**Solution**:
+- Reduce `rate_limit_calls_per_second` in config
+- Schwab has rate limits (typically 120 requests/minute)
+- Add delays if making many API calls
+
+### "Token expired" or "Invalid token"
+
+**Solution**:
+- Tokens expire after 7 days
+- Run: `python -m thetagang.tools.schwab_setup`
+- Or just run ThetaGang and it will prompt you to re-authenticate
+
+### Browser doesn't redirect after login
+
+**This is normal!**
+
+After logging in to Schwab, you'll see a blank page or "connection refused" error. This is expected because `https://127.0.0.1:8182` isn't a real server.
+
+**What to do**:
+- Copy the ENTIRE URL from your browser's address bar
+- It will look like: `https://127.0.0.1:8182/?code=LONG_CODE_HERE`
+- Paste it when ThetaGang prompts you
+
+## Limitations
+
+Current limitations with Schwab support:
+
+1. **Option chain data** - Not yet fully implemented in schwab-trader library
+2. **Streaming data** - Real-time streaming requires additional implementation
+3. **Complex orders** - Some advanced order types may not be supported yet
+4. **Paper trading** - Schwab's paper trading API is limited
+
+Most of these limitations don't affect ThetaGang's core functionality, as it primarily uses:
+- Account balances ✓
+- Position data ✓
+- Simple option orders (market/limit) ✓
+- Market data quotes ✓
+
 ## How it works
 
 Start by reading [the Reddit
